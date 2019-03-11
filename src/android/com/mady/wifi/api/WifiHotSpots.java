@@ -271,6 +271,9 @@ public class WifiHotSpots {
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivity != null) {
             NetworkInfo info = connectivity.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+            Log.i("AndroidPie", "isConnectedToAP: info.getDetailedState() --> " + info.getDetailedState().toString());
+
             if (info != null) {
                 if (info.isConnected()) {
                     return true;
