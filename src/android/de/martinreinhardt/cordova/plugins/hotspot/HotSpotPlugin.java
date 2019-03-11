@@ -884,6 +884,7 @@ public class HotSpotPlugin extends CordovaPlugin {
                 // Wait to connect
                 while (retry > 0 && !connected) {
                     connected = hotspot.isConnectedToAP();
+                    Log.e(LOG_TAG, "connectToWifiNetwork: hotspot.isConnectedToAP?" + (connected ? "true" : "false"));
                     retry--;
                     Thread.sleep(100);
                 }
