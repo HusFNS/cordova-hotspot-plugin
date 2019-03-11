@@ -283,6 +283,18 @@ public class WifiHotSpots {
         return false;
     }
 
+    public boolean isConnectedTo(String ssid) {
+        WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
+        if (wifiInfo != null) {
+            String wifiInfoSsid = wifiInfo.getSSID();
+            if (wifiInfoSsid != null) {
+                Log.i("AndroidPie", "isConnectedTo(String ssid):  --> " + wifiInfoSsid);
+                return wifiInfoSsid.replaceAll("\"", "").equals(ssid);
+            }
+        }
+        return false;
+    }
+
     /**
      * Method to Get hotspot Max Level of all Hotspots Around you
      *

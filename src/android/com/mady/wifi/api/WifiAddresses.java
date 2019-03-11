@@ -112,6 +112,9 @@ public class WifiAddresses {
     public String getGatewayIPAddress() {
         if (mWifiManager != null) {
             final DhcpInfo dhcp = mWifiManager.getDhcpInfo();
+
+            Log.i("AndroidPie", "getGatewayIPAddress: DhcpInfo --> " + dhcp.toString());
+
             return ipIntToString(dhcp.gateway);
         }
         return null;

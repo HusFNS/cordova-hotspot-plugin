@@ -563,12 +563,36 @@ public class HotSpotPlugin extends CordovaPlugin {
         WifiAddresses wu = new WifiAddresses(this.cordova.getActivity());
         JSONObject result = new JSONObject();
         try {
-            result.put("deviceIPAddress", wu.getDeviceIPAddress());
-            result.put("deviceMacAddress", wu.getDeviceMacAddress());
-            result.put("gatewayIPAddress", wu.getGatewayIPAddress());
-            result.put("gatewayMacAddress", wu.getGatWayMacAddress());
+            //if (Build.VERSION.SDK_INT >= 28 /*ANDROID PIE*/) {
+            //
+            //}
+
+            int retry = 100;
+            String gatewayIPAddress = "0.0.0.0";
+            // Wait to connect
+            while (retry > 0 && gatewayIPAddress.equals("0.0.0.0")) {
+                gatewayIPAddress = wu.getGatewayIPAddress();
+                retry--;
+                Thread.sleep(100);
+            }
+
+            result.put("gatewayIPAddress", gatewayIPAddress);
+            Log.i("AndroidPie", "getNetConfig: gatewayIPAddress --> " + gatewayIPAddress);
+
+            String gatWayMacAddress = wu.getGatWayMacAddress();
+            result.put("gatewayMacAddress", gatWayMacAddress);
+            Log.i("AndroidPie", "getNetConfig: gatWayMacAddress --> " + gatWayMacAddress);
+
+            String deviceIPAddress = wu.getDeviceIPAddress();
+            result.put("deviceIPAddress", deviceIPAddress);
+            Log.i("AndroidPie", "getNetConfig: deviceIPAddress --> " + deviceIPAddress);
+
+            String deviceMacAddress = wu.getDeviceMacAddress();
+            result.put("deviceMacAddress", deviceMacAddress);
+            Log.i("AndroidPie", "getNetConfig: deviceMacAddress --> " + deviceMacAddress);
+
             callback.success(result);
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "Error during reading network config.", e);
             callback.error("Error during reading network config.");
         }
@@ -883,7 +907,11 @@ public class HotSpotPlugin extends CordovaPlugin {
                 boolean connected = false;
                 // Wait to connect
                 while (retry > 0 && !connected) {
-                    connected = hotspot.isConnectedToAP();
+                    if (Build.VERSION.SDK_INT >= 28 /*ANDROID PIE*/) {
+                        connected = hotspot.isConnectedTo(ssid);
+                    } else {
+                        connected = hotspot.isConnectedToAP();
+                    }
                     retry--;
                     Thread.sleep(100);
                 }
