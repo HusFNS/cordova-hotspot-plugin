@@ -919,6 +919,7 @@ public class HotSpotPlugin extends CordovaPlugin {
                 Log.i("AndroidPie", "connectToWifiNetwork: hotspot.isConnectedToAP --> " + (connected ? "true" : "false"));
 
                 if (connected) {
+                    hotspot.routeNetworkRequestsThroughWifi(ssid);
                     callback.success("Connection was successfull");
                 } else {
                     callback.error("Connection was not successfull");

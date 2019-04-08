@@ -9,8 +9,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.wifi.ScanResult;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -923,5 +927,94 @@ public class WifiHotSpots {
         }
     }
 
+    /**
+     * Android Pie related stuff
+     */
+
+    private ConnectivityManager.NetworkCallback mNetworkCallback = null;
+
+    /**
+     * This method sets a network callback that is listening for network changes and once is
+     * connected to the desired WiFi network with the given SSID it will bind to that network.
+     *
+     * Note: requires android.permission.INTERNET and android.permission.CHANGE_NETWORK_STATE in
+     * the manifest.
+     *
+     * @param ssid The name of the WiFi network you want to route your requests
+     */
+    public void routeNetworkRequestsThroughWifi(String ssid) {
+        ConnectivityManager connectivity = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // ensure prior network callback is invalidated
+        unregisterNetworkCallback(mNetworkCallback);
+
+        // new NetworkRequest with WiFi transport type
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .build();
+
+        // network callback to listen for network changes
+        mNetworkCallback = new ConnectivityManager.NetworkCallback() {
+
+            // on network ready to use
+            @Override
+            public void onAvailable(Network network) {
+                super.onAvailable(network);
+                if (getNetworkSsid(mContext).equals(ssid)){
+                    releaseNetworkRoute();
+                    createNetworkRoute(network);
+                } else{
+                    releaseNetworkRoute();
+                }
+            }
+        };
+
+        connectivity.requestNetwork(request, mNetworkCallback);
+    }
+
+    private void unregisterNetworkCallback(ConnectivityManager.NetworkCallback networkCallback) {
+        if (networkCallback != null) {
+            try {
+                ConnectivityManager connectivity = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+                connectivity.unregisterNetworkCallback(networkCallback);
+            } catch (Exception ignore) {
+                // do nothing
+            } finally {
+                mNetworkCallback = null;
+            }
+        }
+    }
+
+    private boolean createNetworkRoute(Network network) {
+        boolean processBoundToNetwork = false;
+        if (Build.VERSION.SDK_INT >= 23) {
+            ConnectivityManager connectivity = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            processBoundToNetwork = connectivity.bindProcessToNetwork(network);
+        } else if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
+            processBoundToNetwork = ConnectivityManager.setProcessDefaultNetwork(network);
+        }
+        return processBoundToNetwork;
+    }
+
+    private boolean releaseNetworkRoute() {
+        boolean processBoundToNetwork = false;
+        if (Build.VERSION.SDK_INT >= 23) {
+            ConnectivityManager connectivity = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            processBoundToNetwork = connectivity.bindProcessToNetwork(null);
+        } else if (Build.VERSION.SDK_INT == 21 || Build.VERSION.SDK_INT == 22) {
+            processBoundToNetwork = ConnectivityManager.setProcessDefaultNetwork(null);
+        }
+        return processBoundToNetwork;
+    }
+
+    private String getNetworkSsid(Context context) {
+        // WiFiManager must use application context (not activity context) otherwise a memory leak can occur
+        WifiManager mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+        WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
+        if (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED) {
+            return wifiInfo.getSSID().replaceAll("\"", "");
+        }
+        return "";
+    }
 
 }
